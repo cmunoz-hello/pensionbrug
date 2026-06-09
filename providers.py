@@ -1,6 +1,6 @@
-def get_recommendations(gap_annual):
+def get_recommendations(gap_annual, monthly_contribution_needed, years_until_retirement):
     """
-    Return Pillar 3 provider recommendations based on gap size.
+    Return Pillar 3 recommendations based on gap size and required contribution.
     """
     
     providers = [
@@ -30,30 +30,24 @@ def get_recommendations(gap_annual):
         }
     ]
     
-    # Monthly contribution needed to close gap
-    # Assuming 30 year investment horizon and 5% average return
-    if gap_annual > 0:
-        monthly_needed = round(gap_annual / 12 * 0.6)
-    else:
-        monthly_needed = 0
-    
-    # Filter recommendations based on gap size
     if gap_annual <= 0:
         message = "Your pension looks on track! You may still want to consider Pillar 3 for extra security."
-        recommended = providers  # show all anyway
+        urgency = "low"
     elif gap_annual < 3000:
-        message = f"You have a small gap of €{gap_annual:,} per year. A small monthly Pillar 3 contribution could close this."
-        recommended = [p for p in providers if p["min_monthly"] <= 25]
+        message = "You have a small gap. A modest Pillar 3 contribution can close this comfortably."
+        urgency = "low"
     elif gap_annual < 8000:
-        message = f"You have a moderate gap of €{gap_annual:,} per year. We recommend starting a Pillar 3 pension soon."
-        recommended = providers
+        message = "You have a moderate gap. Starting a Pillar 3 pension soon is recommended."
+        urgency = "medium"
     else:
-        message = f"You have a significant gap of €{gap_annual:,} per year. Starting a Pillar 3 pension is strongly recommended."
-        recommended = providers
+        message = "You have a significant gap. Starting a Pillar 3 pension is strongly recommended."
+        urgency = "high"
     
     return {
         "message": message,
-        "monthly_needed": monthly_needed,
-        "providers": recommended,
+        "urgency": urgency,
+        "monthly_contribution_needed": monthly_contribution_needed,
+        "years_until_retirement": years_until_retirement,
+        "providers": providers,
         "gap_annual": gap_annual
     }
