@@ -1,3 +1,5 @@
+import plotly.graph_objects as go
+
 def get_response(user_input, pension_data=None):
     """
     Rule-based chatbot for pension questions.
