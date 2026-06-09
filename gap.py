@@ -10,7 +10,7 @@ def calculate_gap(aow_annual, pillar2_annual, pillar3_annual, target_annual, bir
     CURRENT_YEAR = 2026
     RETIREMENT_AGE = 67.25
     MEAN_RETURN = 0.05
-    STD_RETURN = 0.12
+    STD_RETURN = 0.08
     NUM_SIMULATIONS = 10000
     
     current_age = CURRENT_YEAR - birth_year
