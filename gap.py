@@ -1,31 +1,43 @@
+import numpy as np
+
 def calculate_gap(aow_annual, pillar2_annual, pillar3_annual, target_annual):
     """
-    Calculate the pension gap between projected income and target income.
-    All amounts are annual gross figures.
+    Calculate pension gap with Monte Carlo simulation.
+    Models investment uncertainty post-WTP where Pillar 2 is DC.
     """
     
-    # Total projected pension
+    # ── Deterministic gap (simple) ──
     total_projected = aow_annual + pillar2_annual + pillar3_annual
-    
-    # Gap (negative means shortfall)
     gap = target_annual - total_projected
+    coverage_percentage = round((total_projected / target_annual) * 100) if target_annual > 0 else 0
+
+    # ── Monte Carlo simulation ──
+    # Models uncertainty in DC pension returns post-WTP
+    # AOW and Pillar 3 are treated as fixed; Pillar 2 varies with market returns
     
-    # Replacement rate (what % of target will be covered)
-    if target_annual > 0:
-        coverage_percentage = round((total_projected / target_annual) * 100)
-    else:
-        coverage_percentage = 0
+    NUM_SIMULATIONS = 10000
     
-    return {
-        "aow_annual": aow_annual,
-        "pillar2_annual": pillar2_annual,
-        "pillar3_annual": pillar3_annual,
-        "total_projected": total_projected,
-        "target_annual": target_annual,
-        "gap": gap,
-        "has_gap": gap > 0,
-        "coverage_percentage": min(coverage_percentage, 100),
-        "monthly_gap": round(gap / 12),
-        "monthly_projected": round(total_projected / 12),
-        "monthly_target": round(target_annual / 12)
-    }
+    # Annual return assumptions for DC pension investments
+    MEAN_RETURN = 0.05      # 5% expected annual return
+    STD_RETURN = 0.12       # 12% standard deviation (market volatility)
+    YEARS_TO_RETIREMENT = 30  # assumed investment horizon
+    
+    # Simulate Pillar 2 outcomes
+    # Each simulation: compound a random annual return over the investment horizon
+    np.random.seed(42)  # reproducible results
+    
+    annual_returns = np.random.normal(
+        MEAN_RETURN, 
+        STD_RETURN, 
+        (NUM_SIMULATIONS, YEARS_TO_RETIREMENT)
+    )
+    
+    # Compound returns over investment horizon
+    # pillar2_annual is the current projected value — we simulate how it might vary
+    growth_factors = np.prod(1 + annual_returns, axis=1)
+    
+    # Normalize: express as ratio relative to expected growth
+    expected_growth = (1 + MEAN_RETURN) ** YEARS_TO_RETIREMENT
+    relative_factors = growth_factors / expected_growth
+    
+    # Apply to pillar 2 pr
