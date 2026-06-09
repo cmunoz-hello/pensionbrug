@@ -128,4 +128,221 @@ if upload_method == "Upload UPO PDF":
 else:
     col1, col2 = st.columns(2)
     with col1:
-        pillar2_annual = st.number_input("Projected annual pension (€)", min_value=0, valu
+        pillar2_annual = st.number_input("Projected annual pension (€)", min_value=0, value=0)
+    with col2:
+        fund_name = st.text_input("Pension fund name (optional)")
+    if pillar2_annual > 0:
+        st.success(f"✅ Pillar 2: €{pillar2_annual:,}/year (€{pillar2_annual//12:,}/month)")
+
+st.divider()
+
+# ══════════════════════════════════════════════
+# STEP 3: Target income
+# ══════════════════════════════════════════════
+st.markdown(f"<h2 style='color:{SLATE}'>Step 3 — Your Retirement Goal</h2>", unsafe_allow_html=True)
+
+st.markdown("A common target is **70–80% of your current salary**. The average Dutch worker aims for around €2,000–2,500/month net.")
+
+target_monthly = st.slider(
+    "What monthly income do you want at retirement? (€ gross)",
+    min_value=500,
+    max_value=5000,
+    value=2000,
+    step=100
+)
+target_annual = target_monthly * 12
+st.caption(f"That's €{target_annual:,} per year gross")
+
+st.divider()
+
+# ══════════════════════════════════════════════
+# STEP 4: Full picture & gap analysis
+# ══════════════════════════════════════════════
+st.markdown(f"<h2 style='color:{SLATE}'>Step 4 — Your Pension Picture</h2>", unsafe_allow_html=True)
+
+gap_data = calculate_gap(
+    aow_annual=aow["aow_annual_single"],
+    pillar2_annual=pillar2_annual,
+    pillar3_annual=0,
+    target_annual=target_annual,
+    birth_year=birth_year
+)
+
+st.session_state.pension_data = gap_data
+
+# ── Summary metrics ──
+sum_col1, sum_col2, sum_col3, sum_col4 = st.columns(4)
+with sum_col1:
+    st.metric("Pillar 1 (AOW)", f"€{aow['aow_monthly_single']:,}/mo")
+with sum_col2:
+    st.metric("Pillar 2 (Employer)", f"€{pillar2_annual//12:,}/mo")
+with sum_col3:
+    st.metric("Total projected", f"€{gap_data['monthly_projected']:,}/mo")
+with sum_col4:
+    delta = gap_data['monthly_projected'] - target_monthly
+    delta_str = f"€{abs(delta):,}/mo {'surplus' if delta >= 0 else 'gap'}"
+    st.metric("Your target", f"€{target_monthly:,}/mo", delta=delta_str)
+
+# ── Bar chart ──
+fig_bar = go.Figure()
+fig_bar.add_trace(go.Bar(
+    name="AOW (Pillar 1)",
+    x=["Your Projected Pension", "Your Target"],
+    y=[aow["aow_annual_single"], 0],
+    marker_color=PEACH
+))
+fig_bar.add_trace(go.Bar(
+    name="Employer Pension (Pillar 2)",
+    x=["Your Projected Pension", "Your Target"],
+    y=[pillar2_annual, 0],
+    marker_color=ORANGE
+))
+fig_bar.add_trace(go.Bar(
+    name="Target Income",
+    x=["Your Projected Pension", "Your Target"],
+    y=[0, target_annual],
+    marker_color=SLATE
+))
+fig_bar.update_layout(
+    title="Annual pension overview (€)",
+    yaxis_title="€ per year",
+    barmode="stack",
+    plot_bgcolor="rgba(0,0,0,0)",
+    paper_bgcolor="rgba(0,0,0,0)",
+    legend=dict(orientation="h", yanchor="bottom", y=1.02)
+)
+st.plotly_chart(fig_bar, use_container_width=True)
+
+# ── Growth timeline ──
+st.subheader("Pillar 2 pot growth over time")
+st.caption("How your DC pension pot is expected to grow until retirement (assuming 5% annual return — based on historical equity market average)")
+
+fig_timeline = go.Figure()
+fig_timeline.add_trace(go.Scatter(
+    x=gap_data["timeline_years"],
+    y=gap_data["timeline_values"],
+    mode="lines",
+    fill="tozeroy",
+    line=dict(color=CORAL, width=2),
+    fillcolor="rgba(200,71,31,0.1)",
+    name="Expected pension value"
+))
+fig_timeline.add_hline(
+    y=target_annual,
+    line_dash="dash",
+    line_color=SLATE,
+    annotation_text="Your target",
+    annotation_position="top right"
+)
+fig_timeline.update_layout(
+    xaxis_title="Year",
+    yaxis_title="€ per year",
+    plot_bgcolor="rgba(0,0,0,0)",
+    paper_bgcolor="rgba(0,0,0,0)"
+)
+st.plotly_chart(fig_timeline, use_container_width=True)
+
+# ── Monte Carlo ──
+st.subheader("Monte Carlo Simulation")
+st.caption(f"Based on {gap_data['num_simulations']:,} simulations of DC investment return scenarios — models the uncertainty introduced by the WTP shift from defined benefit to defined contribution")
+
+mc1, mc2, mc3, mc4 = st.columns(4)
+with mc1:
+    st.metric("Pessimistic (10th %ile)", f"€{gap_data['mc_pessimistic']:,}/yr")
+with mc2:
+    st.metric("Expected (median)", f"€{gap_data['mc_expected']:,}/yr")
+with mc3:
+    st.metric("Optimistic (90th %ile)", f"€{gap_data['mc_optimistic']:,}/yr")
+with mc4:
+    st.metric("Probability of meeting target", f"{gap_data['prob_meeting_target']}%")
+
+# ── Risk classification ──
+risk = gap_data["risk_level"]
+color = gap_data["risk_color"]
+
+if color == "green":
+    st.success(f"✅ **{risk}** — your pension covers {gap_data['coverage_percentage']}% of your target")
+elif color == "orange":
+    st.warning(f"⚠️ **{risk}** — your pension covers {gap_data['coverage_percentage']}% of your target")
+else:
+    st.error(f"🚨 **{risk}** — your pension covers {gap_data['coverage_percentage']}% of your target. Gap: €{gap_data['gap']:,}/year (€{gap_data['monthly_gap']:,}/month)")
+
+st.divider()
+
+# ══════════════════════════════════════════════
+# STEP 5: Pillar 3 recommendations
+# ══════════════════════════════════════════════
+st.markdown(f"<h2 style='color:{SLATE}'>Step 5 — Close the Gap: Pillar 3 Options</h2>", unsafe_allow_html=True)
+
+recommendations = get_recommendations(
+    gap_annual=gap_data["gap"],
+    monthly_contribution_needed=gap_data["monthly_contribution_needed"],
+    years_until_retirement=gap_data["years_until_retirement"]
+)
+
+if gap_data["has_gap"]:
+    gap_val = gap_data['gap']
+    monthly_gap = gap_data['monthly_gap']
+    years_ret = gap_data['years_until_retirement']
+    monthly_contrib = gap_data['monthly_contribution_needed']
+
+    st.markdown(f"""
+    <div style='background-color:white; border-left: 4px solid {CORAL}; padding: 16px; border-radius: 8px; margin-bottom: 16px;'>
+        <h4 style='color:{CORAL}; margin:0'>Your pension gap: €{gap_val:,}/year (€{monthly_gap:,}/month)</h4>
+        <p style='margin:8px 0 0 0'>To close this gap by retirement in <b>{years_ret} years</b>,
+        you would need to invest approximately <b>€{monthly_contrib:,}/month</b>
+        into a Pillar 3 product starting today.</p>
+        <p style='margin:4px 0 0 0; color:grey; font-size:13px'>
+        Assumes 5% average annual return and 20-year retirement period.
+        Contributions are often tax-deductible (jaarruimte).</p>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.success("✅ Your pension looks on track! You may still want to consider Pillar 3 for extra security or early retirement.")
+
+st.write(recommendations["message"])
+
+cols = st.columns(3)
+for idx, provider in enumerate(recommendations["providers"]):
+    with cols[idx]:
+        name = provider['name']
+        ptype = provider['type']
+        desc = provider['description']
+        best_for = provider['best_for']
+        min_monthly = provider['min_monthly']
+        url = provider['url']
+
+        st.markdown(f"""
+        <div style='background-color:white; border: 1px solid #DDD0C4; border-radius: 8px; padding: 16px;'>
+            <h4 style='color:{CORAL}; margin-top:0'>{name}</h4>
+            <p style='color:{SLATE}; font-style:italic; margin:0'>{ptype}</p>
+            <hr style='border-color:#DDD0C4'>
+            <p>{desc}</p>
+            <p><b>Best for:</b> {best_for}</p>
+            <p><b>From:</b> €{min_monthly}/month</p>
+        </div>
+        """, unsafe_allow_html=True)
+        st.link_button(f"Visit {name}", url)
+
+st.divider()
+
+# ══════════════════════════════════════════════
+# STEP 6: Chat assistant
+# ══════════════════════════════════════════════
+st.markdown(f"<h2 style='color:{SLATE}'>Step 6 — Ask PensionBrug</h2>", unsafe_allow_html=True)
+st.write("Ask me anything about your pension, the WTP reform, or your gap.")
+
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+if prompt := st.chat_input("e.g. What does WTP mean for me? What is a pension gap?"):
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    response = get_response(prompt, st.session_state.pension_data)
+
+    st.session_state.messages.append({"role": "assistant", "content": response})
+    with st.chat_message("assistant"):
+        st.markdown(response)
