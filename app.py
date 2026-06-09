@@ -254,32 +254,39 @@ fig_timeline.update_layout(
 st.plotly_chart(fig_timeline, use_container_width=True)
 
 # ── Monte Carlo ──
-st.subheader("Monte Carlo Simulation")
-st.caption(f"Based on {gap_data['num_simulations']:,} simulations of DC investment return scenarios — models the uncertainty introduced by the WTP shift from defined benefit to defined contribution")
+st.subheader("Monte Carlo Simulation — What could your total pension be?")
+st.caption(f"Based on {gap_data['num_simulations']:,} simulations of DC investment return scenarios. Shows your TOTAL projected pension (AOW + Pillar 2) under different market conditions. The uncertainty reflects the WTP shift from defined benefit to defined contribution — your Pillar 2 payout now depends on investment returns.")
 
 mc1, mc2, mc3, mc4 = st.columns(4)
 with mc1:
-    st.metric("Pessimistic (10th %ile)", f"€{gap_data['mc_pessimistic']:,}/yr")
+    st.metric(
+        "Pessimistic total pension",
+        f"€{gap_data['mc_pessimistic']:,}/yr",
+        delta=f"€{gap_data['mc_pessimistic'] - target_annual:,}/yr vs target",
+        help="Worst 10% of market scenarios — poor investment returns over your career"
+    )
 with mc2:
-    st.metric("Expected (median)", f"€{gap_data['mc_expected']:,}/yr")
+    st.metric(
+        "Expected total pension",
+        f"€{gap_data['mc_expected']:,}/yr",
+        delta=f"€{gap_data['mc_expected'] - target_annual:,}/yr vs target",
+        help="Median outcome — most likely scenario based on historical returns"
+    )
 with mc3:
-    st.metric("Optimistic (90th %ile)", f"€{gap_data['mc_optimistic']:,}/yr")
+    st.metric(
+        "Optimistic total pension",
+        f"€{gap_data['mc_optimistic']:,}/yr",
+        delta=f"€{gap_data['mc_optimistic'] - target_annual:,}/yr vs target",
+        help="Best 10% of market scenarios — strong investment returns over your career"
+    )
 with mc4:
-    st.metric("Probability of meeting target", f"{gap_data['prob_meeting_target']}%")
+    st.metric(
+        "Probability of meeting target",
+        f"{gap_data['prob_meeting_target']}%",
+        help=f"Chance your total pension reaches your €{target_monthly:,}/month target"
+    )
 
-# ── Risk classification ──
-risk = gap_data["risk_level"]
-color = gap_data["risk_color"]
-
-if color == "green":
-    st.success(f"✅ **{risk}** — your pension covers {gap_data['coverage_percentage']}% of your target")
-elif color == "orange":
-    st.warning(f"⚠️ **{risk}** — your pension covers {gap_data['coverage_percentage']}% of your target")
-else:
-    st.error(f"🚨 **{risk}** — your pension covers {gap_data['coverage_percentage']}% of your target. Gap: €{gap_data['gap']:,}/year (€{gap_data['monthly_gap']:,}/month)")
-
-st.divider()
-
+st.caption(f"Your target: **€{target_annual:,}/year (€{target_monthly:,}/month)**  |  AOW is fixed at €{aow['aow_annual_single']:,}/year — only Pillar 2 varies with market returns")
 # ══════════════════════════════════════════════
 # STEP 5: Pillar 3 recommendations
 # ══════════════════════════════════════════════
