@@ -57,13 +57,24 @@ st.markdown(f"<h2 style='color:{SLATE}'>Step 1 — About You & AOW (Pillar 1)</h
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    birth_year = st.number_input("Birth year", min_value=1950, max_value=2005, value=2000)
+    birth_year = st.number_input(
+        "Birth year",
+        min_value=1950, max_value=2005, value=2000
+    )
 with col2:
-    years_in_nl = st.number_input("Years lived/worked in NL", min_value=0, max_value=50, value=4)
+    age_arrived_nl = st.number_input(
+        "Age when you first started living or working in NL",
+        min_value=0, max_value=50, value=18,
+        help="This is when your AOW insurance started. Nationality does not matter — it counts from when you first lived or worked here."
+    )
 with col3:
-    years_abroad = st.number_input("Years abroad (without voluntary AOW insurance)", min_value=0, max_value=50, value=2)
+    years_abroad = st.number_input(
+        "Years spent abroad since arriving (without voluntary AOW insurance)",
+        min_value=0, max_value=50, value=0,
+        help="Any years outside NL where you did not pay voluntary AOW contributions reduce your entitlement by 2% per year."
+    )
 
-aow = calculate_aow(birth_year, years_in_nl, years_abroad)
+aow = calculate_aow(birth_year, age_arrived_nl, years_abroad)
 
 col_a, col_b, col_c = st.columns(3)
 with col_a:
@@ -74,9 +85,10 @@ with col_c:
     st.metric("Projected AOW", f"€{aow['aow_monthly_single']:,}/month")
 
 if aow['aow_percentage'] < 100:
-    st.warning(f"⚠️ Due to {years_abroad} year(s) abroad, your AOW is reduced to {aow['aow_percentage']}% of the full benefit (€{aow['aow_annual_single']:,}/year). You may be able to buy back missing years via the SVB.")
+    missing_years = 50 - aow['total_years_insured']
+    st.warning(f"⚠️ Your AOW is {aow['aow_percentage']}% of the full benefit (€{aow['aow_annual_single']:,}/year). You arrived at age {age_arrived_nl} and have {round(aow['total_years_insured'])} insured years projected. You are missing approximately {round(missing_years)} years. You may be able to buy back some gaps via the SVB (svb.nl).")
 else:
-    st.success(f"✅ Full AOW entitlement: €{aow['aow_annual_single']:,}/year (€{aow['aow_monthly_single']:,}/month)")
+    st.success(f"✅ Full AOW entitlement projected: €{aow['aow_annual_single']:,}/year (€{aow['aow_monthly_single']:,}/month) based on {round(aow['total_years_insured'])} insured years.")
 
 st.divider()
 
