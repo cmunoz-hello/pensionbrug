@@ -4,21 +4,16 @@ import re
 def extract_upo_data(pdf_file):
     """
     Extract key pension data from a UPO PDF.
+    Works with standardised Dutch UPO format (mandated by Pensioenfederatie).
     """
     
     text = ""
     
-    # Extract all text from PDF
     with pdfplumber.open(pdf_file) as pdf:
         for page in pdf.pages:
             page_text = page.extract_text()
             if page_text:
                 text += page_text + "\n"
-    
-    # Debug: print extracted text to terminal
-    print("=== EXTRACTED TEXT ===")
-    print(text)
-    print("=== END TEXT ===")
     
     result = {
         "fund_name": None,
@@ -28,70 +23,50 @@ def extract_upo_data(pdf_file):
         "raw_text": text
     }
     
-    # Extract fund name
-    fund_patterns = [
-        r'Pensioenuitvoerder[:\s]+([^\n]+)',
-        r'(Pensioenfonds[^\n]+)',
-        r'(PFZW|ABP|PME|PMT|Achmea|Nationale-Nederlanden)',
-    ]
-    for pattern in fund_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            result["fund_name"] = match.group(1).strip()
-            break
+    # ── Fund name ──
+    fund_match = re.search(r'Pensioenuitvoerder:\s*(.+)', text)
+    if fund_match:
+        result["fund_name"] = fund_match.group(1).strip()
     
-    # Extract accrued pension - try multiple patterns
-    accrued_patterns = [
-        r'opgebouwd[^\n]*?\n[^\n]*?€\s*([\d.,]+)',
-        r'opgebouwd bij ons[^\n]*?€\s*([\d.,]+)',
-        r'heeft u bij ons pensioen opgebouwd[^\n]*?€\s*([\d.,]+)',
-        r'€\s*([\d.,]+)\s*bruto per jaar\s*\n',
-        r'zolang u leeft.*?€\s*([\d.,]+)',
-    ]
-    for pattern in accrued_patterns:
-        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
-        if match:
-            amount_str = match.group(1).replace('.', '').replace(',', '.')
+    # ── Accrued pension ──
+    # Looks for: "zolang u leeft: € 2.847 bruto per jaar"
+    # First occurrence = accrued
+    accrued_matches = re.findall(r'zolang u leeft:\s*€\s*([\d.,]+)\s*bruto per jaar', text)
+    if accrued_matches:
+        amount_str = accrued_matches[0].replace('.', '').replace(',', '.')
+        try:
+            result["accrued_pension_annual"] = round(float(amount_str))
+        except:
+            pass
+    
+    # ── Projected pension ──
+    # Second occurrence of same pattern = projected
+    if len(accrued_matches) >= 2:
+        amount_str = accrued_matches[1].replace('.', '').replace(',', '.')
+        try:
+            result["projected_pension_annual"] = round(float(amount_str))
+        except:
+            pass
+    else:
+        # Fallback: look for "verwachten" section specifically
+        projected_match = re.search(
+            r'blijft opbouwen\?.*?€\s*([\d.,]+)\s*bruto per jaar',
+            text,
+            re.DOTALL
+        )
+        if projected_match:
+            amount_str = projected_match.group(1).replace('.', '').replace(',', '.')
             try:
-                result["accrued_pension_annual"] = round(float(amount_str))
-                break
+                result["projected_pension_annual"] = round(float(amount_str))
             except:
-                continue
+                pass
     
-    # Extract projected pension - try multiple patterns
-    projected_patterns = [
-        r'verwachten[^\n]*?€\s*([\d.,]+)',
-        r'blijft opbouwen[^\n]*?€\s*([\d.,]+)',
-        r'kunt u bij[^\n]*?€\s*([\d.,]+)',
-        r'€\s*([\d.,]+)\s*bruto per jaar\s*$',
-        r'18[.,]\d{3}',  # looks for amounts around 18,000
-    ]
-    for pattern in projected_patterns:
-        match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
-        if match:
-            amount_str = match.group(0) if '18' in pattern else match.group(1)
-            amount_str = re.sub(r'[€\s]', '', amount_str).replace('.', '').replace(',', '.')
-            try:
-                amount = round(float(amount_str))
-                if 1000 < amount < 100000:  # sanity check
-                    result["projected_pension_annual"] = amount
-                    break
-            except:
-                continue
-    
-    # Extract retirement age
-    age_patterns = [
-        r'(\d{2})\s*jaar\s*en\s*(\d{1,2})\s*maanden',
-        r'pensioenleeftijd[:\s]+(\d{2})',
-    ]
-    for pattern in age_patterns:
-        match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            if 'jaar' in pattern:
-                result["retirement_age"] = int(match.group(1)) + int(match.group(2))/12
-            else:
-                result["retirement_age"] = float(match.group(1))
-            break
+    # ── Retirement age ──
+    age_match = re.search(r'Pensioenleeftijd:\s*(\d{2})\s*jaar\s*en\s*(\d{1,2})\s*maanden', text)
+    if age_match:
+        years = int(age_match.group(1))
+        months = int(age_match.group(2))
+        result["retirement_age"] = years + months/12
     
     return result
 
