@@ -13,7 +13,6 @@ from chatbot import get_response
 # ── Page config ──
 st.set_page_config(
     page_title="PensionBrug",
-    page_icon="🌉",
     layout="wide"
 )
 
@@ -41,7 +40,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ── Header ──
-st.markdown(f"<h1 style='color:{CORAL}'>🌉 PensionBrug</h1>", unsafe_allow_html=True)
+st.markdown(f"<h1 style='color:{CORAL}'>PensionBrug</h1>", unsafe_allow_html=True)
 st.markdown("<p style='color:#3D4A5C; font-size:18px;'>Your pension in one place — gap detection, projections, and personalised guidance</p>", unsafe_allow_html=True)
 st.divider()
 
