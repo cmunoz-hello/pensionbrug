@@ -1,29 +1,36 @@
 def calculate_aow(birth_year, years_in_nl, years_abroad):
     """
     Calculate projected AOW entitlement at retirement.
-    Projects forward assuming the user stays in NL until retirement.
+    AOW insurance runs from age 15 to retirement age (67.25).
+    Maximum insurable period = 52.25 years, capped at 50 for full benefit.
+    2% per year of insurance = 100% after 50 years.
     """
     
-    # Current year
     CURRENT_YEAR = 2026
     RETIREMENT_AGE = 67.25
+    AOW_START_AGE = 15
     
-    # Years until retirement
     current_age = CURRENT_YEAR - birth_year
     years_until_retirement = max(0, RETIREMENT_AGE - current_age)
     
-    # Total years insured by retirement = current years in NL + future years until retirement - years abroad
-    total_years_insured = years_in_nl + years_until_retirement - years_abroad
-    total_years_insured = max(0, min(total_years_insured, 50))  # cap at 50
+    # Total possible insurable years from age 15 to retirement
+    total_possible_years = RETIREMENT_AGE - AOW_START_AGE  # 52.25 years
     
-    # AOW percentage (max 100%)
-    aow_percentage = min(total_years_insured * 2, 100)
+    # Years already NOT insured = years abroad (uninsured gaps)
+    uninsured_years = years_abroad
     
-    # Full AOW amounts (2025 figures, gross per year)
+    # Total insured years by retirement
+    # = total possible years - uninsured years
+    total_years_insured = min(total_possible_years - uninsured_years, 50)
+    total_years_insured = max(0, total_years_insured)
+    
+    # AOW percentage (2% per year, max 100%)
+    aow_percentage = round(min(total_years_insured * 2, 100))
+    
+    # Full AOW amounts 2025 gross per year
     FULL_AOW_SINGLE = 19674
     FULL_AOW_COUPLE = 13435
     
-    # Calculate entitlement
     aow_single = round(FULL_AOW_SINGLE * aow_percentage / 100)
     aow_couple = round(FULL_AOW_COUPLE * aow_percentage / 100)
     
@@ -31,7 +38,7 @@ def calculate_aow(birth_year, years_in_nl, years_abroad):
         "current_age": round(current_age),
         "years_until_retirement": round(years_until_retirement),
         "total_years_insured": round(total_years_insured),
-        "aow_percentage": round(aow_percentage),
+        "aow_percentage": aow_percentage,
         "aow_annual_single": aow_single,
         "aow_annual_couple": aow_couple,
         "aow_monthly_single": round(aow_single / 12),
