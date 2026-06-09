@@ -259,25 +259,28 @@ st.caption(f"Based on {gap_data['num_simulations']:,} simulations of DC investme
 
 mc1, mc2, mc3, mc4 = st.columns(4)
 with mc1:
+    diff1 = gap_data['mc_pessimistic'] - target_annual
     st.metric(
         "Pessimistic total pension",
         f"€{gap_data['mc_pessimistic']:,}/yr",
-        delta=f"€{gap_data['mc_pessimistic'] - target_annual:,}/yr vs target",
-        help="Worst 10% of market scenarios — poor investment returns over your career"
+        delta=f"€{diff1:,}/yr vs target",
+        delta_color="normal" if diff1 >= 0 else "inverse"
     )
 with mc2:
+    diff2 = gap_data['mc_expected'] - target_annual
     st.metric(
         "Expected total pension",
         f"€{gap_data['mc_expected']:,}/yr",
-        delta=f"€{gap_data['mc_expected'] - target_annual:,}/yr vs target",
-        help="Median outcome — most likely scenario based on historical returns"
+        delta=f"€{diff2:,}/yr vs target",
+        delta_color="normal" if diff2 >= 0 else "inverse"
     )
 with mc3:
+    diff3 = gap_data['mc_optimistic'] - target_annual
     st.metric(
         "Optimistic total pension",
         f"€{gap_data['mc_optimistic']:,}/yr",
-        delta=f"€{gap_data['mc_optimistic'] - target_annual:,}/yr vs target",
-        help="Best 10% of market scenarios — strong investment returns over your career"
+        delta=f"€{diff3:,}/yr vs target",
+        delta_color="normal" if diff3 >= 0 else "inverse"
     )
 with mc4:
     st.metric(
