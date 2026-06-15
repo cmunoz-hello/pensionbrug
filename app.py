@@ -17,6 +17,16 @@ st.set_page_config(
     layout="wide"
 )
 
+# Force scroll to top on load
+st.markdown("""
+<script>
+    window.scrollTo(0, 0);
+    window.onload = function() {
+        window.scrollTo(0, 0);
+    };
+</script>
+""", unsafe_allow_html=True)
+
 # Brand colors
 CORAL  = "#C8471F"
 ORANGE = "#E07530"
@@ -175,13 +185,13 @@ with col1:
     )
 with col2:
     age_arrived_nl = st.number_input(
-        "Age when you first started living or working in NL",
+        "Age arrived in NL",
         min_value=0, max_value=50, value=18,
         help="This is when your AOW insurance started. Nationality does not matter, it counts from when you first lived or worked here."
     )
 with col3:
     years_abroad = st.number_input(
-        "Years spent abroad since arriving (without voluntary AOW insurance)",
+        "Years abroad since arriving",
         min_value=0, max_value=50, value=0,
         help="Any years outside NL where you did not pay voluntary AOW contributions reduce your entitlement by 2% per year."
     )
