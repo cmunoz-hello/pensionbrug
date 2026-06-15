@@ -254,8 +254,14 @@ fig_timeline.update_layout(
 st.plotly_chart(fig_timeline, use_container_width=True)
 
 # ── Monte Carlo ──
-st.subheader("Monte Carlo Simulation — What could your total pension be?")
-st.caption(f"Based on {gap_data['num_simulations']:,} simulations of DC investment return scenarios. Shows your TOTAL projected pension (AOW + Pillar 2) under different market conditions. The uncertainty reflects the WTP shift from defined benefit to defined contribution — your Pillar 2 payout now depends on investment returns.")
+st.subheader("Monte Carlo Simulation — Your Pillar 2 Range")
+st.caption(
+    f"Your AOW (€{aow['aow_annual_single']:,}/yr) is fixed — it's a government formula, not an investment. "
+    f"Only your Pillar 2 pot varies, because under WTP it's now invested. "
+    f"The 'Expected' scenario equals your UPO's own projection. "
+    f"Based on {gap_data['num_simulations']:,} simulations with a ±{gap_data['mc_spread_pct']}% range "
+    f"reflecting {gap_data['years_until_retirement']} years until retirement."
+)
 
 mc1, mc2, mc3, mc4 = st.columns(4)
 with mc1:
@@ -264,7 +270,8 @@ with mc1:
         "Pessimistic total pension",
         f"€{gap_data['mc_pessimistic']:,}/yr",
         delta=f"€{diff1:,}/yr vs target",
-        delta_color="normal" if diff1 >= 0 else "inverse"
+        delta_color="normal" if diff1 >= 0 else "inverse",
+        help="10th percentile — weaker investment returns on your Pillar 2 pot"
     )
 with mc2:
     diff2 = gap_data['mc_expected'] - target_annual
@@ -272,7 +279,8 @@ with mc2:
         "Expected total pension",
         f"€{gap_data['mc_expected']:,}/yr",
         delta=f"€{diff2:,}/yr vs target",
-        delta_color="normal" if diff2 >= 0 else "inverse"
+        delta_color="normal" if diff2 >= 0 else "inverse",
+        help="Median outcome — matches your UPO's own projection"
     )
 with mc3:
     diff3 = gap_data['mc_optimistic'] - target_annual
@@ -280,16 +288,21 @@ with mc3:
         "Optimistic total pension",
         f"€{gap_data['mc_optimistic']:,}/yr",
         delta=f"€{diff3:,}/yr vs target",
-        delta_color="normal" if diff3 >= 0 else "inverse"
+        delta_color="normal" if diff3 >= 0 else "inverse",
+        help="90th percentile — stronger investment returns on your Pillar 2 pot"
     )
 with mc4:
     st.metric(
         "Probability of meeting target",
         f"{gap_data['prob_meeting_target']}%",
-        help=f"Chance your total pension reaches your €{target_monthly:,}/month target"
+        help=f"Share of simulations where AOW + Pillar 2 ≥ your €{target_monthly:,}/month target"
     )
 
-st.caption(f"Your target: **€{target_annual:,}/year (€{target_monthly:,}/month)**  |  AOW is fixed at €{aow['aow_annual_single']:,}/year — only Pillar 2 varies with market returns")
+st.caption(
+    f"Your target: **€{target_annual:,}/year (€{target_monthly:,}/month)**  |  "
+    f"AOW (fixed): €{aow['aow_annual_single']:,}/year  |  "
+    f"Pillar 2 (UPO projection): €{pillar2_annual:,}/year"
+)
 # ══════════════════════════════════════════════
 # STEP 5: Pillar 3 recommendations
 # ══════════════════════════════════════════════
