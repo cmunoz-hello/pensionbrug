@@ -10,20 +10,20 @@ from gap import calculate_gap
 from providers import get_recommendations
 from chatbot import get_response
 
-# ── Page config ──
+# Page config
 st.set_page_config(
     page_title="PensionBrug",
     layout="wide"
 )
 
-# ── Brand colors ──
+# Brand colors
 CORAL  = "#C8471F"
 ORANGE = "#E07530"
 PEACH  = "#F0A96E"
 SLATE  = "#3D4A5C"
 CREAM  = "#F5EDE4"
 
-# ── Custom CSS ──
+# Custom CSS
 st.markdown("""
 <style>
     .main { background-color: #F5EDE4; }
@@ -39,12 +39,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Header ──
+# Header
 st.markdown(f"<h1 style='color:{CORAL}'>PensionBrug</h1>", unsafe_allow_html=True)
-st.markdown("<p style='color:#3D4A5C; font-size:18px;'>Your pension in one place — gap detection, projections, and personalised guidance</p>", unsafe_allow_html=True)
+st.markdown("<p style='color:#3D4A5C; font-size:18px;'>Your pension in one place: gap detection, projections, and personalised guidance</p>", unsafe_allow_html=True)
 st.divider()
 
-# ── Session state ──
+# Session state
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "pension_data" not in st.session_state:
@@ -53,7 +53,7 @@ if "pension_data" not in st.session_state:
 # ══════════════════════════════════════════════
 # STEP 1: Personal details + Pillar 1
 # ══════════════════════════════════════════════
-st.markdown(f"<h2 style='color:{SLATE}'>Step 1 — About You & AOW (Pillar 1)</h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='color:{SLATE}'>Step 1: About You and AOW (Pillar 1)</h2>", unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns(3)
 with col1:
@@ -65,7 +65,7 @@ with col2:
     age_arrived_nl = st.number_input(
         "Age when you first started living or working in NL",
         min_value=0, max_value=50, value=18,
-        help="This is when your AOW insurance started. Nationality does not matter — it counts from when you first lived or worked here."
+        help="This is when your AOW insurance started. Nationality does not matter, it counts from when you first lived or worked here."
     )
 with col3:
     years_abroad = st.number_input(
@@ -95,7 +95,7 @@ st.divider()
 # ══════════════════════════════════════════════
 # STEP 2: Pillar 2
 # ══════════════════════════════════════════════
-st.markdown(f"<h2 style='color:{SLATE}'>Step 2 — Employer Pension (Pillar 2)</h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='color:{SLATE}'>Step 2: Employer Pension (Pillar 2)</h2>", unsafe_allow_html=True)
 
 upload_method = st.radio(
     "How would you like to add your Pillar 2 data?",
@@ -150,9 +150,9 @@ st.divider()
 # ══════════════════════════════════════════════
 # STEP 3: Target income
 # ══════════════════════════════════════════════
-st.markdown(f"<h2 style='color:{SLATE}'>Step 3 — Your Retirement Goal</h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='color:{SLATE}'>Step 3: Your Retirement Goal</h2>", unsafe_allow_html=True)
 
-st.markdown("A common target is **70–80% of your current salary**. The average Dutch worker aims for around €2,000–2,500/month net.")
+st.markdown("A common target is **70 to 80% of your current salary**. The average Dutch worker aims for around €2,000 to €2,500/month net.")
 
 target_monthly = st.slider(
     "What monthly income do you want at retirement? (€ gross)",
@@ -169,7 +169,7 @@ st.divider()
 # ══════════════════════════════════════════════
 # STEP 4: Full picture & gap analysis
 # ══════════════════════════════════════════════
-st.markdown(f"<h2 style='color:{SLATE}'>Step 4 — Your Pension Picture</h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='color:{SLATE}'>Step 4: Your Pension Picture</h2>", unsafe_allow_html=True)
 
 gap_data = calculate_gap(
     aow_annual=aow["aow_annual_single"],
@@ -181,7 +181,7 @@ gap_data = calculate_gap(
 
 st.session_state.pension_data = gap_data
 
-# ── Summary metrics ──
+# Summary metrics
 sum_col1, sum_col2, sum_col3, sum_col4 = st.columns(4)
 with sum_col1:
     st.metric("Pillar 1 (AOW)", f"€{aow['aow_monthly_single']:,}/mo")
@@ -194,7 +194,7 @@ with sum_col4:
     delta_str = f"€{abs(delta):,}/mo {'surplus' if delta >= 0 else 'gap'}"
     st.metric("Your target", f"€{target_monthly:,}/mo", delta=delta_str)
 
-# ── Bar chart ──
+# Bar chart
 fig_bar = go.Figure()
 fig_bar.add_trace(go.Bar(
     name="AOW (Pillar 1)",
@@ -224,9 +224,9 @@ fig_bar.update_layout(
 )
 st.plotly_chart(fig_bar, use_container_width=True)
 
-# ── Growth timeline ──
+# Growth timeline
 st.subheader("Pillar 2 pot growth over time")
-st.caption("How your DC pension pot is expected to grow until retirement (assuming 5% annual return — based on historical equity market average)")
+st.caption("How your DC pension pot is expected to grow until retirement, assuming a 5% annual return based on the historical equity market average.")
 
 fig_timeline = go.Figure()
 fig_timeline.add_trace(go.Scatter(
@@ -253,15 +253,17 @@ fig_timeline.update_layout(
 )
 st.plotly_chart(fig_timeline, use_container_width=True)
 
-# ── Monte Carlo ──
-st.subheader("Monte Carlo Simulation — Your Pillar 2 Range")
-st.caption(
-    f"Your AOW (€{aow['aow_annual_single']:,}/yr) is fixed — it's a government formula, not an investment. "
-    f"Only your Pillar 2 pot varies, because under WTP it's now invested. "
-    f"The 'Expected' scenario equals your UPO's own projection. "
-    f"Based on {gap_data['num_simulations']:,} simulations with a ±{gap_data['mc_spread_pct']}% range "
-    f"reflecting {gap_data['years_until_retirement']} years until retirement."
-)
+# Monte Carlo
+st.subheader("Monte Carlo Simulation: Your Pillar 2 Range")
+st.caption(f"Based on {gap_data['num_simulations']:,} simulations of your Pillar 2 pot's possible growth. Your AOW stays fixed.")
+
+with st.expander("Why does only Pillar 2 vary?"):
+    st.markdown(f"""
+    * **AOW (€{aow['aow_annual_single']:,}/yr)** is a fixed government formula. It is not an investment, so there is no risk attached to it.
+    * **Pillar 2 (€{pillar2_annual:,}/yr)** is your UPO's projection. Under WTP this is now a personal investment pot, so the real payout depends on market returns between now and retirement.
+    * **"Expected"** equals your UPO projection exactly. It sits in the middle of the range.
+    * **"Pessimistic"** and **"Optimistic"** show weaker or stronger market returns over your remaining **{gap_data['years_until_retirement']} years**.
+    """)
 
 mc1, mc2, mc3, mc4 = st.columns(4)
 with mc1:
@@ -271,7 +273,7 @@ with mc1:
         f"€{gap_data['mc_pessimistic']:,}/yr",
         delta=f"€{diff1:,}/yr vs target",
         delta_color="normal" if diff1 >= 0 else "inverse",
-        help="10th percentile — weaker investment returns on your Pillar 2 pot"
+        help="10th percentile. Weaker investment returns on your Pillar 2 pot."
     )
 with mc2:
     diff2 = gap_data['mc_expected'] - target_annual
@@ -280,7 +282,7 @@ with mc2:
         f"€{gap_data['mc_expected']:,}/yr",
         delta=f"€{diff2:,}/yr vs target",
         delta_color="normal" if diff2 >= 0 else "inverse",
-        help="Median outcome — matches your UPO's own projection"
+        help="Median outcome. Matches your UPO's own projection."
     )
 with mc3:
     diff3 = gap_data['mc_optimistic'] - target_annual
@@ -289,24 +291,25 @@ with mc3:
         f"€{gap_data['mc_optimistic']:,}/yr",
         delta=f"€{diff3:,}/yr vs target",
         delta_color="normal" if diff3 >= 0 else "inverse",
-        help="90th percentile — stronger investment returns on your Pillar 2 pot"
+        help="90th percentile. Stronger investment returns on your Pillar 2 pot."
     )
 with mc4:
     st.metric(
         "Probability of meeting target",
         f"{gap_data['prob_meeting_target']}%",
-        help=f"Share of simulations where AOW + Pillar 2 ≥ your €{target_monthly:,}/month target"
+        help=f"Share of simulations where AOW plus Pillar 2 reaches your €{target_monthly:,}/month target."
     )
 
 st.caption(
-    f"Your target: **€{target_annual:,}/year (€{target_monthly:,}/month)**  |  "
-    f"AOW (fixed): €{aow['aow_annual_single']:,}/year  |  "
-    f"Pillar 2 (UPO projection): €{pillar2_annual:,}/year"
+    f"Your target: **€{target_annual:,}/year (€{target_monthly:,}/month)**. "
+    f"AOW (fixed): €{aow['aow_annual_single']:,}/year. "
+    f"Pillar 2 (UPO projection): €{pillar2_annual:,}/year."
 )
+
 # ══════════════════════════════════════════════
 # STEP 5: Pillar 3 recommendations
 # ══════════════════════════════════════════════
-st.markdown(f"<h2 style='color:{SLATE}'>Step 5 — Close the Gap: Pillar 3 Options</h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='color:{SLATE}'>Step 5: Close the Gap with Pillar 3</h2>", unsafe_allow_html=True)
 
 recommendations = get_recommendations(
     gap_annual=gap_data["gap"],
@@ -327,8 +330,8 @@ if gap_data["has_gap"]:
         you would need to invest approximately <b>€{monthly_contrib:,}/month</b>
         into a Pillar 3 product starting today.</p>
         <p style='margin:4px 0 0 0; color:grey; font-size:13px'>
-        Assumes 5% average annual return and 20-year retirement period.
-        Contributions are often tax-deductible (jaarruimte).</p>
+        This assumes a 5% average annual return and a 20 year retirement period.
+        Contributions are often tax deductible (jaarruimte).</p>
     </div>
     """, unsafe_allow_html=True)
 else:
@@ -363,7 +366,7 @@ st.divider()
 # ══════════════════════════════════════════════
 # STEP 6: Chat assistant
 # ══════════════════════════════════════════════
-st.markdown(f"<h2 style='color:{SLATE}'>Step 6 — Ask PensionBrug</h2>", unsafe_allow_html=True)
+st.markdown(f"<h2 style='color:{SLATE}'>Step 6: Ask PensionBrug</h2>", unsafe_allow_html=True)
 st.write("Ask me anything about your pension, the WTP reform, or your gap.")
 
 for message in st.session_state.messages:
