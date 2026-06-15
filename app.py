@@ -1,6 +1,7 @@
 import streamlit as st
 import tempfile
 import os
+import base64
 import plotly.graph_objects as go
 import numpy as np
 
@@ -22,27 +23,121 @@ ORANGE = "#E07530"
 PEACH  = "#F0A96E"
 SLATE  = "#3D4A5C"
 CREAM  = "#F5EDE4"
+BORDER = "#DDD0C4"
 
-# Custom CSS
-st.markdown("""
+# Global styling: font, background, cards, sidebar
+st.markdown(f"""
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-    .main { background-color: #F5EDE4; }
-    .stApp { background-color: #F5EDE4; }
-    h1, h2, h3 { color: #3D4A5C; }
-    .stAlert { border-radius: 8px; }
-    div[data-testid="metric-container"] {
+    html, body, [class*="css"] {{
+        font-family: 'Poppins', sans-serif;
+    }}
+    .main, .stApp {{
+        background-color: {CREAM};
+    }}
+    h1, h2, h3, h4 {{
+        font-family: 'Poppins', sans-serif;
+        color: {SLATE};
+    }}
+
+    /* Sidebar */
+    section[data-testid="stSidebar"] {{
+        background-color: {SLATE};
+    }}
+    section[data-testid="stSidebar"] * {{
+        color: {CREAM} !important;
+    }}
+    section[data-testid="stSidebar"] hr {{
+        border-color: rgba(255,255,255,0.15);
+    }}
+
+    /* Metric cards */
+    div[data-testid="metric-container"] {{
         background-color: white;
-        border: 1px solid #DDD0C4;
-        border-radius: 8px;
+        border: 1px solid {BORDER};
+        border-radius: 10px;
         padding: 16px;
-    }
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }}
+
+    /* Alerts */
+    .stAlert {{
+        border-radius: 10px;
+    }}
+
+    /* Section card wrapper */
+    .pb-card {{
+        background-color: white;
+        border: 1px solid {BORDER};
+        border-radius: 14px;
+        padding: 28px 28px 20px 28px;
+        margin-bottom: 24px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }}
+
+    /* Header banner */
+    .pb-header {{
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        background-color: white;
+        border: 1px solid {BORDER};
+        border-radius: 14px;
+        padding: 20px 28px;
+        margin-bottom: 28px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+    }}
+    .pb-header img {{
+        height: 64px;
+    }}
+    .pb-header-text h1 {{
+        margin: 0;
+        font-size: 32px;
+        color: {CORAL};
+    }}
+    .pb-header-text p {{
+        margin: 4px 0 0 0;
+        color: {SLATE};
+        font-size: 16px;
+    }}
+
+    /* Buttons */
+    .stLinkButton a, .stButton button {{
+        border-radius: 8px !important;
+        font-weight: 500 !important;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
-# Header
-st.markdown(f"<h1 style='color:{CORAL}'>PensionBrug</h1>", unsafe_allow_html=True)
-st.markdown("<p style='color:#3D4A5C; font-size:18px;'>Your pension in one place: gap detection, projections, and personalised guidance</p>", unsafe_allow_html=True)
-st.divider()
+# Header banner with logo
+def get_logo_base64():
+    try:
+        with open("assets/logo.png", "rb") as f:
+            return base64.b64encode(f.read()).decode()
+    except FileNotFoundError:
+        return None
+
+logo_b64 = get_logo_base64()
+
+if logo_b64:
+    st.markdown(f"""
+    <div class="pb-header">
+        <img src="data:image/png;base64,{logo_b64}" />
+        <div class="pb-header-text">
+            <h1>PensionBrug</h1>
+            <p>Your pension in one place: gap detection, projections, and personalised guidance</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown(f"""
+    <div class="pb-header">
+        <div class="pb-header-text">
+            <h1>PensionBrug</h1>
+            <p>Your pension in one place: gap detection, projections, and personalised guidance</p>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Session state
 if "messages" not in st.session_state:
@@ -50,9 +145,26 @@ if "messages" not in st.session_state:
 if "pension_data" not in st.session_state:
     st.session_state.pension_data = None
 
+# Sidebar progress tracker
+with st.sidebar:
+    if logo_b64:
+        st.markdown(f"<img src='data:image/png;base64,{logo_b64}' style='width:80px; margin-bottom:16px;' />", unsafe_allow_html=True)
+    st.markdown("### Your journey")
+    st.markdown("""
+    1. About you & AOW
+    2. Employer pension
+    3. Retirement goal
+    4. Your pension picture
+    5. Close the gap
+    6. Ask PensionBrug
+    """)
+    st.markdown("---")
+    st.markdown("Scroll down to move through each step. Your numbers update live as you go.")
+
 # ══════════════════════════════════════════════
 # STEP 1: Personal details + Pillar 1
 # ══════════════════════════════════════════════
+st.markdown('<div class="pb-card">', unsafe_allow_html=True)
 st.markdown(f"<h2 style='color:{SLATE}'>Step 1: About You and AOW (Pillar 1)</h2>", unsafe_allow_html=True)
 
 col1, col2, col3 = st.columns(3)
@@ -90,11 +202,12 @@ if aow['aow_percentage'] < 100:
 else:
     st.success(f"✅ Full AOW entitlement projected: €{aow['aow_annual_single']:,}/year (€{aow['aow_monthly_single']:,}/month) based on {round(aow['total_years_insured'])} insured years.")
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════
 # STEP 2: Pillar 2
 # ══════════════════════════════════════════════
+st.markdown('<div class="pb-card">', unsafe_allow_html=True)
 st.markdown(f"<h2 style='color:{SLATE}'>Step 2: Employer Pension (Pillar 2)</h2>", unsafe_allow_html=True)
 
 upload_method = st.radio(
@@ -145,11 +258,12 @@ else:
     if pillar2_annual > 0:
         st.success(f"✅ Pillar 2: €{pillar2_annual:,}/year (€{pillar2_annual//12:,}/month)")
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════
 # STEP 3: Target income
 # ══════════════════════════════════════════════
+st.markdown('<div class="pb-card">', unsafe_allow_html=True)
 st.markdown(f"<h2 style='color:{SLATE}'>Step 3: Your Retirement Goal</h2>", unsafe_allow_html=True)
 
 st.markdown("A common target is **70 to 80% of your current salary**. The average Dutch worker aims for around €2,000 to €2,500/month net.")
@@ -164,11 +278,12 @@ target_monthly = st.slider(
 target_annual = target_monthly * 12
 st.caption(f"That's €{target_annual:,} per year gross")
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════
 # STEP 4: Full picture & gap analysis
 # ══════════════════════════════════════════════
+st.markdown('<div class="pb-card">', unsafe_allow_html=True)
 st.markdown(f"<h2 style='color:{SLATE}'>Step 4: Your Pension Picture</h2>", unsafe_allow_html=True)
 
 gap_data = calculate_gap(
@@ -193,6 +308,8 @@ with sum_col4:
     delta = gap_data['monthly_projected'] - target_monthly
     delta_str = f"€{abs(delta):,}/mo {'surplus' if delta >= 0 else 'gap'}"
     st.metric("Your target", f"€{target_monthly:,}/mo", delta=delta_str)
+
+st.write("")
 
 # Bar chart
 fig_bar = go.Figure()
@@ -220,6 +337,7 @@ fig_bar.update_layout(
     barmode="stack",
     plot_bgcolor="rgba(0,0,0,0)",
     paper_bgcolor="rgba(0,0,0,0)",
+    font=dict(family="Poppins"),
     legend=dict(orientation="h", yanchor="bottom", y=1.02)
 )
 st.plotly_chart(fig_bar, use_container_width=True)
@@ -249,7 +367,8 @@ fig_timeline.update_layout(
     xaxis_title="Year",
     yaxis_title="€ per year",
     plot_bgcolor="rgba(0,0,0,0)",
-    paper_bgcolor="rgba(0,0,0,0)"
+    paper_bgcolor="rgba(0,0,0,0)",
+    font=dict(family="Poppins")
 )
 st.plotly_chart(fig_timeline, use_container_width=True)
 
@@ -306,9 +425,24 @@ st.caption(
     f"Pillar 2 (UPO projection): €{pillar2_annual:,}/year."
 )
 
+# Risk classification
+risk = gap_data["risk_level"]
+color = gap_data["risk_color"]
+
+st.write("")
+if color == "green":
+    st.success(f"✅ **{risk}**: your pension covers {gap_data['coverage_percentage']}% of your target")
+elif color == "orange":
+    st.warning(f"⚠️ **{risk}**: your pension covers {gap_data['coverage_percentage']}% of your target")
+else:
+    st.error(f"🚨 **{risk}**: your pension covers {gap_data['coverage_percentage']}% of your target. Gap: €{gap_data['gap']:,}/year (€{gap_data['monthly_gap']:,}/month)")
+
+st.markdown('</div>', unsafe_allow_html=True)
+
 # ══════════════════════════════════════════════
 # STEP 5: Pillar 3 recommendations
 # ══════════════════════════════════════════════
+st.markdown('<div class="pb-card">', unsafe_allow_html=True)
 st.markdown(f"<h2 style='color:{SLATE}'>Step 5: Close the Gap with Pillar 3</h2>", unsafe_allow_html=True)
 
 recommendations = get_recommendations(
@@ -324,7 +458,7 @@ if gap_data["has_gap"]:
     monthly_contrib = gap_data['monthly_contribution_needed']
 
     st.markdown(f"""
-    <div style='background-color:white; border-left: 4px solid {CORAL}; padding: 16px; border-radius: 8px; margin-bottom: 16px;'>
+    <div style='background-color:{CREAM}; border-left: 4px solid {CORAL}; padding: 16px; border-radius: 8px; margin-bottom: 16px;'>
         <h4 style='color:{CORAL}; margin:0'>Your pension gap: €{gap_val:,}/year (€{monthly_gap:,}/month)</h4>
         <p style='margin:8px 0 0 0'>To close this gap by retirement in <b>{years_ret} years</b>,
         you would need to invest approximately <b>€{monthly_contrib:,}/month</b>
@@ -350,10 +484,10 @@ for idx, provider in enumerate(recommendations["providers"]):
         url = provider['url']
 
         st.markdown(f"""
-        <div style='background-color:white; border: 1px solid #DDD0C4; border-radius: 8px; padding: 16px;'>
+        <div style='background-color:white; border: 1px solid {BORDER}; border-radius: 10px; padding: 16px; height: 100%;'>
             <h4 style='color:{CORAL}; margin-top:0'>{name}</h4>
             <p style='color:{SLATE}; font-style:italic; margin:0'>{ptype}</p>
-            <hr style='border-color:#DDD0C4'>
+            <hr style='border-color:{BORDER}'>
             <p>{desc}</p>
             <p><b>Best for:</b> {best_for}</p>
             <p><b>From:</b> €{min_monthly}/month</p>
@@ -361,11 +495,12 @@ for idx, provider in enumerate(recommendations["providers"]):
         """, unsafe_allow_html=True)
         st.link_button(f"Visit {name}", url)
 
-st.divider()
+st.markdown('</div>', unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════
 # STEP 6: Chat assistant
 # ══════════════════════════════════════════════
+st.markdown('<div class="pb-card">', unsafe_allow_html=True)
 st.markdown(f"<h2 style='color:{SLATE}'>Step 6: Ask PensionBrug</h2>", unsafe_allow_html=True)
 st.write("Ask me anything about your pension, the WTP reform, or your gap.")
 
@@ -383,3 +518,5 @@ if prompt := st.chat_input("e.g. What does WTP mean for me? What is a pension ga
     st.session_state.messages.append({"role": "assistant", "content": response})
     with st.chat_message("assistant"):
         st.markdown(response)
+
+st.markdown('</div>', unsafe_allow_html=True)
