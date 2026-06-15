@@ -13,6 +13,5 @@ We described what we saw, including pasting screenshots of the running app and e
 3. UPO parsing uses Dutch field labels mandated by the Pensioenfederatie (for example "Pensioenuitvoerder", "zolang u leeft", "Pensioenleeftijd"). Do not translate or rewrite these in `pillar2.py`, the parser depends on matching the real document text.
 4. AOW counts from `age_arrived_nl`, not from birth year or a fixed starting age. This is intentional and reflects how Dutch AOW insurance actually works for people who move to the Netherlands as adults.
 5. Monte Carlo: only Pillar 2 varies. `mc_expected` must always equal the deterministic `aow_annual + pillar2_annual + pillar3_annual` total (see "Monte Carlo Logic" below).
-6. No dash characters (hyphens used as punctuation, en dashes, or em dashes) in any user facing text: chatbot responses, UI labels, captions, warnings, or markdown. Use commas, periods, or colons instead. This applies to `app.py`, `chatbot.py`, and any other file producing text shown to the user. Code comments and section dividers (for example `# ──`) are not user facing and are fine.
 
 
