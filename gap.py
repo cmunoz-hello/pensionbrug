@@ -2,23 +2,6 @@ import numpy as np
 
 
 def calculate_gap(aow_annual, pillar2_annual, pillar3_annual, target_annual, birth_year):
-    """
-    Calculate pension gap and run a Monte Carlo simulation of the
-    Pillar 2 (DC) payout under the WTP system.
-
-    What varies and what doesn't:
-    - AOW (Pillar 1)   -> FIXED. Government formula, pay-as-you-go, no investment risk.
-    - Pillar 2         -> VARIES. Post-WTP this is a personal investment pot.
-                          The UPO gives a projection assuming a standard (DNB-prescribed)
-                          return; the real payout depends on actual market returns.
-    - Pillar 3         -> FIXED for now (not yet a variable input in the MVP).
-
-    Monte Carlo approach:
-    We model the FINAL Pillar 2 payout directly as a distribution centred on
-    the UPO projection, with spread that widens the further away retirement is.
-    This mirrors how real Dutch pension planners present pessimistic /
-    expected / optimistic scenarios.
-    """
 
     CURRENT_YEAR = 2026
     RETIREMENT_AGE = 67.25
@@ -26,50 +9,54 @@ def calculate_gap(aow_annual, pillar2_annual, pillar3_annual, target_annual, bir
     current_age = CURRENT_YEAR - birth_year
     years_until_retirement = max(1, RETIREMENT_AGE - current_age)
 
-    # ── Deterministic picture (what the UPO already tells you) ──
+    # Deterministic picture (what the UPO already tells you)
     total_projected = aow_annual + pillar2_annual + pillar3_annual
     gap = target_annual - total_projected
     coverage_percentage = (
         round((total_projected / target_annual) * 100) if target_annual > 0 else 0
     )
 
-    # ── Monte Carlo: simulate the Pillar 2 payout only ──
+    # Monte Carlo: simulate the Pillar 2 payout only
     NUM_SIMULATIONS = 10_000
-
-    # 8% per sqrt(year) reflects a lifecycle DC fund that de-risks as the
-    # participant nears retirement (the WTP default), not a 100%-equity
-    # portfolio (which would be closer to 12%).
     BASE_VOLATILITY = 0.08
-    spread = min(BASE_VOLATILITY * np.sqrt(years_until_retirement) / np.sqrt(10), 0.6)
 
+    # Sigma for the lognormal grows with the time horizon
+    sigma = min(BASE_VOLATILITY * np.sqrt(years_until_retirement) / np.sqrt(10), 0.6)
+
+    # For a lognormal where the median equals pillar2_annual:
+    #   median = exp(mu)  =>  mu = log(pillar2_annual)
+    # (sigma here is the sigma of the underlying normal, not std of the lognormal itself)
     np.random.seed(42)
-    shocks = np.random.normal(loc=1.0, scale=spread, size=NUM_SIMULATIONS)
-    shocks = np.clip(shocks, 0.3, 2.2)
 
-    simulated_pillar2 = pillar2_annual * shocks
+    if pillar2_annual > 0:
+        mu = np.log(pillar2_annual)
+        simulated_pillar2 = np.random.lognormal(mean=mu, sigma=sigma, size=NUM_SIMULATIONS)
+    else:
+        simulated_pillar2 = np.zeros(NUM_SIMULATIONS)
+
     simulated_totals = aow_annual + simulated_pillar2 + pillar3_annual
 
-    pessimistic = round(float(np.percentile(simulated_totals, 10)))
-    expected_mc = round(float(np.percentile(simulated_totals, 50)))
-    optimistic = round(float(np.percentile(simulated_totals, 90)))
+    # 5th, 50th, 95th percentiles matching the Dutch URM standard
+    pessimistic = round(float(np.percentile(simulated_totals, 5)))
+    expected_mc  = round(float(np.percentile(simulated_totals, 50)))
+    optimistic   = round(float(np.percentile(simulated_totals, 95)))
 
     prob_meeting_target = round(float(np.mean(simulated_totals >= target_annual)) * 100)
 
-    # ── Growth timeline (illustrative, linear accrual to the UPO projection) ──
+    # Timeline: linear accrual from 0 to UPO projection
     timeline_years = list(range(CURRENT_YEAR, CURRENT_YEAR + int(years_until_retirement) + 1))
     timeline_values = [
         round(pillar2_annual * (yr / years_until_retirement))
         for yr in range(int(years_until_retirement) + 1)
     ]
 
-    # ── Monthly Pillar 3 contribution needed to close the gap ──
+    # Monthly Pillar 3 contribution needed to close the gap
     monthly_needed = calculate_monthly_contribution(
         gap_annual=max(0, gap),
         years_until_retirement=years_until_retirement,
         annual_return=0.05,
     )
 
-    # ── Risk classification ──
     risk_level = classify_risk(coverage_percentage, prob_meeting_target)
 
     return {
@@ -91,7 +78,7 @@ def calculate_gap(aow_annual, pillar2_annual, pillar3_annual, target_annual, bir
         "mc_optimistic": optimistic,
         "prob_meeting_target": prob_meeting_target,
         "num_simulations": NUM_SIMULATIONS,
-        "mc_spread_pct": round(spread * 100),
+        "mc_sigma_pct": round(sigma * 100),
         "timeline_years": timeline_years,
         "timeline_values": timeline_values,
         "monthly_contribution_needed": monthly_needed,
@@ -101,6 +88,10 @@ def calculate_gap(aow_annual, pillar2_annual, pillar3_annual, target_annual, bir
 
 
 def calculate_monthly_contribution(gap_annual, years_until_retirement, annual_return):
+    """
+    Monthly Pillar 3 contribution needed to close the gap.
+    Uses the future value of annuity formula.
+    """
     if gap_annual <= 0 or years_until_retirement <= 0:
         return 0
 
