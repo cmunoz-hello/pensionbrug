@@ -304,8 +304,12 @@ with sum_col3:
     st.metric("Total projected", f"€{gap_data['monthly_projected']:,}/mo")
 with sum_col4:
     delta = gap_data['monthly_projected'] - target_monthly
-    delta_str = f"€{abs(delta):,}/mo {'surplus' if delta >= 0 else 'gap'}"
-    st.metric("Your target", f"€{target_monthly:,}/mo", delta=delta_str)
+    st.metric(
+        "Your target",
+        f"€{target_monthly:,}/mo",
+        delta=f"€{abs(delta):,}/mo {'surplus' if delta >= 0 else 'gap'}",
+        delta_color="normal" if delta >= 0 else "inverse"
+    )
 
 st.write("")
 
