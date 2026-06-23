@@ -2,6 +2,7 @@ import numpy as np
 
 
 def calculate_gap(aow_annual, pillar2_annual, pillar3_annual, target_annual, birth_year):
+   
 
     CURRENT_YEAR = 2026
     RETIREMENT_AGE = 67.25
