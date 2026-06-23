@@ -35,7 +35,7 @@ SLATE  = "#3D4A5C"
 CREAM  = "#F5EDE4"
 BORDER = "#DDD0C4"
 
-# Global styling: font, background, cards, sidebar
+# Global styling
 st.markdown(f"""
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -49,8 +49,6 @@ st.markdown(f"""
         font-family: 'Poppins', sans-serif;
         color: {SLATE};
     }}
-
-    /* Sidebar */
     section[data-testid="stSidebar"] {{
         background-color: {SLATE};
     }}
@@ -60,8 +58,6 @@ st.markdown(f"""
     section[data-testid="stSidebar"] hr {{
         border-color: rgba(255,255,255,0.15);
     }}
-
-    /* Metric cards */
     div[data-testid="metric-container"] {{
         background-color: white;
         border: 1px solid {BORDER};
@@ -69,13 +65,9 @@ st.markdown(f"""
         padding: 16px;
         box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     }}
-
-    /* Alerts */
     .stAlert {{
         border-radius: 10px;
     }}
-
-    /* Section card wrapper */
     .pb-card {{
         background-color: white;
         border: 1px solid {BORDER};
@@ -84,8 +76,6 @@ st.markdown(f"""
         margin-bottom: 24px;
         box-shadow: 0 1px 4px rgba(0,0,0,0.04);
     }}
-
-    /* Header banner */
     .pb-header {{
         display: flex;
         align-items: center;
@@ -110,8 +100,6 @@ st.markdown(f"""
         color: {SLATE};
         font-size: 16px;
     }}
-
-    /* Buttons */
     .stLinkButton a, .stButton button {{
         border-radius: 8px !important;
         font-weight: 500 !important;
@@ -155,7 +143,7 @@ if "messages" not in st.session_state:
 if "pension_data" not in st.session_state:
     st.session_state.pension_data = None
 
-# Sidebar progress tracker
+# Sidebar
 with st.sidebar:
     if logo_b64:
         st.markdown(f"<img src='data:image/png;base64,{logo_b64}' style='width:80px; margin-bottom:16px;' />", unsafe_allow_html=True)
@@ -352,46 +340,22 @@ fig_bar.update_layout(
 )
 st.plotly_chart(fig_bar, use_container_width=True)
 
-# Growth timeline
-st.subheader("Pillar 2 pot growth over time")
-st.caption("How your DC pension pot is expected to grow until retirement, assuming a 5% annual return based on the historical equity market average.")
-
-fig_timeline = go.Figure()
-fig_timeline.add_trace(go.Scatter(
-    x=gap_data["timeline_years"],
-    y=gap_data["timeline_values"],
-    mode="lines",
-    fill="tozeroy",
-    line=dict(color=CORAL, width=2),
-    fillcolor="rgba(200,71,31,0.1)",
-    name="Expected pension value"
-))
-fig_timeline.add_hline(
-    y=target_annual,
-    line_dash="dash",
-    line_color=SLATE,
-    annotation_text="Your target",
-    annotation_position="top right"
-)
-fig_timeline.update_layout(
-    xaxis_title="Year",
-    yaxis_title="€ per year",
-    plot_bgcolor="rgba(0,0,0,0)",
-    paper_bgcolor="rgba(0,0,0,0)",
-    font=dict(family="Poppins")
-)
-st.plotly_chart(fig_timeline, use_container_width=True)
-
 # Monte Carlo
-st.subheader("Monte Carlo Simulation: Your Pillar 2 Range")
-st.caption(f"Based on {gap_data['num_simulations']:,} simulations of your Pillar 2 pot's possible growth. Your AOW stays fixed.")
+st.subheader("Monte Carlo Simulation: Pillar 2 Range")
+st.caption(
+    f"Based on {gap_data['num_simulations']:,} simulations of your Pillar 2 pot. "
+    f"The median equals your UPO projection. The spread reflects investment uncertainty "
+    f"over your {gap_data['years_until_retirement']} years until retirement. "
+    f"Your AOW stays fixed throughout."
+)
 
-with st.expander("Why does only Pillar 2 vary?"):
+with st.expander("How does this work?"):
     st.markdown(f"""
-    * **AOW (€{aow['aow_annual_single']:,}/yr)** is a fixed government formula. It is not an investment, so there is no risk attached to it.
-    * **Pillar 2 (€{pillar2_annual:,}/yr)** is your UPO's projection. Under WTP this is now a personal investment pot, so the real payout depends on market returns between now and retirement.
-    * **"Expected"** equals your UPO projection exactly. It sits in the middle of the range.
-    * **"Pessimistic"** and **"Optimistic"** show weaker or stronger market returns over your remaining **{gap_data['years_until_retirement']} years**.
+    * **AOW (€{aow['aow_annual_single']:,}/yr)** is a fixed government formula. It is not an investment, so it carries no uncertainty.
+    * **Pillar 2 (€{pillar2_annual:,}/yr)** is your UPO's projection. Under WTP this is now a personal investment pot, so the actual payout depends on how your investments perform between now and retirement.
+    * The simulation uses a **lognormal distribution** centred on your UPO figure. Lognormal is the standard approach for investment outcomes: it ensures the pot can never go negative and reflects the natural right-skew of compounding returns.
+    * The three scenarios follow the **Dutch URM standard** (Uniforme Rekenmethodiek): 5th percentile (pessimistic), 50th percentile (expected), and 95th percentile (optimistic).
+    * The **50th percentile always equals your UPO projection** exactly. The spread widens the further away your retirement is.
     """)
 
 mc1, mc2, mc3, mc4 = st.columns(4)
@@ -402,7 +366,7 @@ with mc1:
         f"€{gap_data['mc_pessimistic']:,}/yr",
         delta=f"€{diff1:,}/yr vs target",
         delta_color="normal" if diff1 >= 0 else "inverse",
-        help="10th percentile. Weaker investment returns on your Pillar 2 pot."
+        help="5th percentile (Dutch URM pessimistic scenario). Weaker investment outcomes on your Pillar 2 pot."
     )
 with mc2:
     diff2 = gap_data['mc_expected'] - target_annual
@@ -411,7 +375,7 @@ with mc2:
         f"€{gap_data['mc_expected']:,}/yr",
         delta=f"€{diff2:,}/yr vs target",
         delta_color="normal" if diff2 >= 0 else "inverse",
-        help="Median outcome. Matches your UPO's own projection."
+        help="50th percentile (Dutch URM expected scenario). Equals your UPO's own projection."
     )
 with mc3:
     diff3 = gap_data['mc_optimistic'] - target_annual
@@ -420,7 +384,7 @@ with mc3:
         f"€{gap_data['mc_optimistic']:,}/yr",
         delta=f"€{diff3:,}/yr vs target",
         delta_color="normal" if diff3 >= 0 else "inverse",
-        help="90th percentile. Stronger investment returns on your Pillar 2 pot."
+        help="95th percentile (Dutch URM optimistic scenario). Stronger investment outcomes on your Pillar 2 pot."
     )
 with mc4:
     st.metric(
@@ -474,7 +438,6 @@ if gap_data["has_gap"]:
         you would need to invest approximately <b>€{monthly_contrib:,}/month</b>
         into a Pillar 3 product starting today.</p>
         <p style='margin:4px 0 0 0; color:grey; font-size:13px'>
-        This assumes a 5% average annual return and a 20 year retirement period.
         Contributions are often tax deductible (jaarruimte).</p>
     </div>
     """, unsafe_allow_html=True)
