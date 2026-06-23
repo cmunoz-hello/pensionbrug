@@ -364,7 +364,7 @@ with mc1:
     st.metric(
         "Pessimistic total pension",
         f"€{gap_data['mc_pessimistic']:,}/yr",
-        delta=f"€{diff1:,}/yr vs target",
+        delta=f"€{abs(diff1):,}/yr {'above' if diff1 >= 0 else 'below'} target",
         delta_color="normal" if diff1 >= 0 else "inverse",
         help="5th percentile (Dutch URM pessimistic scenario). Weaker investment outcomes on your Pillar 2 pot."
     )
@@ -373,7 +373,7 @@ with mc2:
     st.metric(
         "Expected total pension",
         f"€{gap_data['mc_expected']:,}/yr",
-        delta=f"€{diff2:,}/yr vs target",
+        delta=f"€{abs(diff2):,}/yr {'above' if diff2 >= 0 else 'below'} target",
         delta_color="normal" if diff2 >= 0 else "inverse",
         help="50th percentile (Dutch URM expected scenario). Equals your UPO's own projection."
     )
@@ -382,7 +382,7 @@ with mc3:
     st.metric(
         "Optimistic total pension",
         f"€{gap_data['mc_optimistic']:,}/yr",
-        delta=f"€{diff3:,}/yr vs target",
+        delta=f"€{abs(diff3):,}/yr {'above' if diff3 >= 0 else 'below'} target",
         delta_color="normal" if diff3 >= 0 else "inverse",
         help="95th percentile (Dutch URM optimistic scenario). Stronger investment outcomes on your Pillar 2 pot."
     )
